@@ -140,10 +140,11 @@ const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY)
      let event;
 
      try{
-        event = Stripe.Webhooks.constructEvent(request.body, sig, endpointSecret,process.env.
+        event = stripeInstance.webhooks.constructEvent(request.body, sig,process.env.
           STRIPE_WEBHOOK_SECRET );
      }catch(error){
-           response.status(400).send(`Webhook Error: ${err.message}`);
+          console.error(error);
+    return response.status(400).send(`Webhook Error: ${error.message}`);
      }
 
      //Handle the event
