@@ -6,7 +6,6 @@ import { Link } from 'react-router-dom'
 const CourseCard = ({course}) => {
 
   const {currency, calculateRating} = useContext(AppContext)
-  console.log(course);
   return (
     <Link to={'/course/' + course._id} onClick={()=> scrollTo(0,0,)} 
     className='border border-gray-500/30 pb-6 overflow-hidden rounded-lg'>
