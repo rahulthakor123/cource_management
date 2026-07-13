@@ -1,29 +1,8 @@
-// import { clerkClient } from '@clerk/express'
-
-//   // update role to educator
-// export const updateRoleToEducator = async (req , res)=>{
-//     console.log(req.auth);
-// console.log(req.auth?.userId);
-//     try{
-//         const userId = req.auth.userId
-
-//         await clerkClient.users.updateUserMetadata(userId,{
-//             publicMetadata: {
-//                 role: 'educator',
-//             }
-//         })
-
-//         res.json({ success: true, message: 'You can publish a course now'})
-//     }catch(error){
-//        res.json({ success: false, message: error.message })
-//     }
-// }
-
-
-
 import { clerkClient } from "@clerk/express";
 import { v2 as cloudinary } from 'cloudinary';
 import Course from '../models/Course.js'
+import { Purchase } from '../models/Purchase.js'
+import User from '../models/User.js'
 
 export const updateRoleToEducator = async (req, res) => {
   try {
@@ -97,8 +76,9 @@ export const getEducatorCourses = async (req,res)=>{
 export const educatorDashboardData = async (req , res)=>{
   try{
     const educator = req.auth.userId;
-    const coursess = await Course.find({educator});
-    const totalCourses = courses.map(course => course._id);
+    const courses = await Course.find({educator});
+    const courseIds = courses.map(course => course._id);
+    const totalCourses = courses.length;
 
     // calculate total earnings from purchases
     const purchases = await Purchase.find({
@@ -112,7 +92,7 @@ export const educatorDashboardData = async (req , res)=>{
     const enrolledStudentsData = [];
     for(const course of courses){
       const students = await User.find({
-        _id: {$in: course.enrolledStudentsData}
+        _id: {$in: course.enrolledStudents}
       },'name imageUrl');
 
       students.forEach(student => {
@@ -135,23 +115,23 @@ export const educatorDashboardData = async (req , res)=>{
 export const getEnrolledStudentsData = async ( req , res)=>{
 
   try{
-    const educator = req.auth.userid;
+    const educator = req.auth.userId;
     const courses = await Course.find({educator});
     const courseIds = courses.map(course => course._id);
 
     const purchases = await Purchase.find({
-      courseid: { $in: courseIds },
+      courseId: { $in: courseIds },
       status: 'completed'
     }).populate('userId', 'name imageUrl').populate('courseId', 'courseTitle')
 
     const enrolledStudents = purchases.map(purchase => ({
          student: purchase.userId,
          courseTitle: purchase.courseId.courseTitle,
-         purchaseDate: purchase.cretedAt
+         purchaseDate: purchase.createdAt
     }));
 
     res.json({success: true, enrolledStudents})
   } catch (error){
-       res.json({ success: false, messge: error.message });
+       res.json({ success: false, message: error.message });
   }
 }

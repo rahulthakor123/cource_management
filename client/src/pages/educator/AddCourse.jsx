@@ -1,10 +1,15 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef, useContext } from 'react'
 import uniqid from 'uniqid';
 import Quill from 'quill'
 import { assets } from '../../assets/assets';
+import { AppContext } from '../../context/AppContext';
+import { toast } from 'react-toastify';
+import axios from 'axios';
 
 
 const AddCourse = () => {
+
+  const { backendUrl, getToken } = useContext(AppContext)
   
   const quillRef = useRef(null)
   const editorRef = useRef(null)
@@ -95,7 +100,54 @@ const AddCourse = () => {
     };
     
       const handleSubmit = async (e) => {
-        e.preventDefault()
+        try{
+          e.preventDefault()
+          if(!image){
+            toast.error("Thumbnail Not Selected")
+          }
+
+          const courseData = {
+            courseTitle,
+            courseDescription: quillRef.current.root.innerHTML,
+            coursePrice: Number(coursePrice),
+            discount: Number(discount),
+            courseContent: chapters,
+          }
+
+          const formData = new FormData()
+          formData.append('courseData', JSON.stringify(courseData))
+          formData.append('image',image)
+
+          const token = await getToken()
+          const {data} = await axios.post(backendUrl + '/api/educator/add-course',
+          formData, { headers: { Authorization: `Bearer ${token}`}})
+
+          if( data.success){
+           toast.success(data.message)
+
+           setCourseTitle('')
+           setCoursePrice(0)
+           setDiscount(0)
+           setImage(null) 
+
+           setChapters([]);
+           setShowPopup(false);
+           setCurrentChapterId(null);
+
+          setLectureDetails({
+            lectureTitle: "",
+            lectureDuration: "",
+            lectureUrl: "",
+            isPreviewFree: false,
+           });
+           
+           quillRef.current.root.innerHTML = ""
+          }else{
+            toast.error(data.message)
+          }
+        }catch(error){
+           toast.error(error.message)
+        }
       };
 
 
@@ -140,7 +192,7 @@ const AddCourse = () => {
               < input type='file' id='thumbnailImage' onChange={e => setImage(e.target.files[0])} 
               accept='image/*' hidden />
               <img className='max-h-10' src={image ? URL.createObjectURL(image) :
-                '' } alt='' />
+                null } alt='Thumbnail Preview' />
              </label>
            </div>
          </div>
@@ -209,16 +261,6 @@ const AddCourse = () => {
                   />
                 </div>
 
-                {/* <div className='mb-2'>
-                  <p>Lecture Title</p>
-                  <input
-                   type='text'
-                   className='mt-1 block w-full border rounded py-1 px-2'
-                   value={lectureDetails.lectureTitle}
-                   onChange={(e) => setLectureDetails({ ...lectureDetails,
-                    lectureTitle: e.target.value  })}
-                  />
-                  </div> */}
 
                   <div className='mb-2'>
                   <p>Duration (minutes)</p>

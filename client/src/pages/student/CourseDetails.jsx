@@ -6,6 +6,39 @@ import { assets } from "../../assets/assets";
 import humanizeDuration from "humanize-duration";
 import Footer from "../../components/student/Footer";
 import YouTube from 'react-youtube'
+import { getToken } from "@clerk/react";
+import { toast } from 'react-toastify';
+import axios from "axios";
+
+
+const getYoutubeVideoId = (url) => {
+  try {
+    const parsedUrl = new URL(url);
+
+    if (parsedUrl.hostname === "youtu.be") {
+      return parsedUrl.pathname.slice(1);
+    }
+
+    if (
+      parsedUrl.hostname.includes("youtube.com") &&
+      parsedUrl.searchParams.get("v")
+    ) {
+      return parsedUrl.searchParams.get("v");
+    }
+
+    if (parsedUrl.pathname.includes("/embed/")) {
+      return parsedUrl.pathname.split("/embed/")[1];
+    }
+
+    if (parsedUrl.pathname.includes("/shorts/")) {
+      return parsedUrl.pathname.split("/shorts/")[1];
+    }
+
+    return "";
+  } catch {
+    return "";
+  }
+};
 
 const CourseDetails = () => {
   const { id } = useParams();
@@ -21,17 +54,55 @@ const CourseDetails = () => {
     calculateChapterTime,
     calculateCourseDuration,
     calculateNoOfLectures,
-    currency,
+    currency,backendUrl, userData
   } = useContext(AppContext);
 
-  const fetchCouseData = async () => {
-    const findCourse = allCourses.find((course) => course._id === id);
-    setCourseData(findCourse);
-  };
+  const fetchCouseData = async ()=>{
+    try {
+      const {data} = await axios.get(backendUrl + '/api/course/' + id )
+
+      if(data.success){
+        setCourseData(data.courseData)
+      }else{
+        toast.error(data.message)
+      }
+    }catch(error){
+      toast.error(error.message)
+    }
+  }
+
+  const enrolledCourse = async ()=>{
+    try{
+      if(!userData){
+        return toast.warn('Login to Enroll')
+      }
+      if(isAlreadyEnrolled){
+        return toast.warn('Already Enrolled')
+      }
+      const token = await getToken()
+
+      const {data} = await axios.post(backendUrl + '/api/user/purchase',{courseId:
+        courseData._id},{headers: { Authorization: `Bearer ${token}`}})
+        if (data.success){
+          const {session_url} = data
+          window.location.replace(session_url)
+        }else{
+          toast.error(data.message)
+        }
+    }catch(error){
+      toast.error(error.response?.data?.message || error.message)
+    }
+  }
 
   useEffect(() => {
     fetchCouseData();
   }, [allCourses]);
+
+  useEffect(()=> {
+    if(userData && courseData){
+      setIsAlreadyEnrolled(userData.enrolledCourses.includes(courseData._id))
+    }
+  },[userData, courseData])
 
   const toggleSection = (index) => {
     setOpenSections((prev) => ({
@@ -64,7 +135,7 @@ const CourseDetails = () => {
           <p
             className="pt-4 md:text-base text-sm"
             dangerouslySetInnerHTML={{
-              __html: courseData.courseDescription.slice(0, 200),
+              __html: (courseData.courseDescription || "").slice(0, 200),
             }}
           ></p>
 
@@ -87,12 +158,12 @@ const CourseDetails = () => {
               ))}
             </div>
             <p className="text-blue-600">
-              ({courseData.courseRatings.length}
+              ({courseData.courseRatings?.length || 0}
               {courseData.courseRatings.length > 1 ? "ratings" : "rating"} )
             </p>
 
             <p>
-              {courseData.enrolledStudents.length}{" "}
+              {courseData.enrolledStudents?.length || 0}{" "}
               {courseData.enrolledStudents.length > 1 ? "students" : "student"}
             </p>
           </div>
@@ -103,7 +174,7 @@ const CourseDetails = () => {
               className="text-blue-600
             underline"
             >
-              GreateStack
+              {courseData.educator.name}
             </span>
           </p>
 
@@ -111,7 +182,7 @@ const CourseDetails = () => {
             <h2 className="text-xl font-semibold">Course Structure</h2>
 
             <div className="pt-5">
-              {courseData.courseContent.map((chapter, index) => (
+              {(courseData.courseContent || []).map((chapter, index) => (
                 <div
                   key={index}
                   className="border border-gray-300 bg-white mb-2
@@ -165,7 +236,7 @@ const CourseDetails = () => {
                               {lecture.isPreviewFree && (
                                 <p
                                 onClick={()=>setPlayerData({
-                                  videoId: lecture.lectureUrl.split('/').pop()
+                                  videoId: getYoutubeVideoId(lecture.lectureUrl)
                                 })}
                                   className="text-blue-500
                           cursor-pointer"
@@ -211,8 +282,8 @@ const CourseDetails = () => {
 
         {
         playerData ? 
-        <YouTube vedioId={playerData.videoId} opts={{playerVars: 
-        {autoplay: 1}}} iframeClassName='w-full aspect-vedio'/>
+        <YouTube videoId={playerData.videoId} opts={{playerVars: 
+        {autoplay: 1}}} iframeClassName='w-full aspect-video'/>
          :
         <img src={courseData.courseThumbnail} alt="" />
           }
@@ -272,7 +343,7 @@ const CourseDetails = () => {
               </div>
             </div>
 
-            <button
+            <button onClick={enrolledCourse}
               className="md:mt-6 mt-4 w-full py-3 rounded bg-blue-600
                text-white font-medium"
             >

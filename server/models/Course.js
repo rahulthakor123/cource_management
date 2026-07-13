@@ -13,7 +13,7 @@ const chapterSchema = new mongoose.Schema({
     chapterId : { type: String, required: true },
     chapterOrder: { type: Number, required: true },
     chapterTitle: { type: String, required: true },
-    chapterContent: {lectureSchema}
+    chapterContent: [lectureSchema]
 },{_id: false})
 
 const courseSchema = new mongoose.Schema({

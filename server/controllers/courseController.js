@@ -1,37 +1,38 @@
-import Course from "../models/Course.js"
-
-
+import Course from "../models/Course.js";
 
 // Get All courses
-export const getAllCourse =  async (req , res)=>{
-    try{
-        const courses = await Course.find({isPublished: true}).select
-        (['courseContent']).populate({path: 'educator'})
+export const getAllCourse = async (req, res) => {
+  try {
+    const courses = await Course.find({ isPublished: true })
+      .select(
+        "courseTitle courseDescription courseThumbnail coursePrice  discount courseContent courseRatings enrolledStudents educator",
+      )
+      .populate({ path: "educator" });
 
-        res.json({ success: true, courses })
-    }catch(error){
-        res.json({ success: false, message: error.message })
-    }
-}
+    res.json({ success: true, courses });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
 
 // Get Course by Id
-export const getCourseId = async ( req, res)=>{
-    const {id} = req.params
+export const getCourseId = async (req, res) => {
+  const { id } = req.params;
 
-    try{
-        const courseData = await Course.findById(id).populate({path: 'educator'})
+  try {
+    const courseData = await Course.findById(id).populate({ path: "educator" });
 
-        // Remove lectureUrl if isPreviewFree is false
-        courseData.courseContent.forEach(chapter => {
-            chapter.chapterContent.forEach(lecture => {
-                if(!lecture.isPreviewFree){
-                    lecture.lectureUrl = "";
-                }
-            })
-        })
+    // Remove lectureUrl if isPreviewFree is false
+    courseData.courseContent.forEach((chapter) => {
+      chapter.chapterContent.forEach((lecture) => {
+        if (!lecture.isPreviewFree) {
+          lecture.lectureUrl = "";
+        }
+      });
+    });
 
-        res.json({ success: true, courseData})
-    }catch(error){
-       res.json({ success: false,message: error.message })
-    }
-}
+    res.json({ success: true, courseData });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
