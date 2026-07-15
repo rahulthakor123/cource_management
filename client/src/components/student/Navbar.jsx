@@ -1,7 +1,7 @@
 
 import React, { useContext } from 'react'
 import { assets } from '../../assets/assets'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useClerk , UserButton, useUser } from '@clerk/react'
 import { AppContext } from '../../context/AppContext'
 import axios from 'axios'
@@ -50,7 +50,7 @@ const Navbar = () => {
             <div className='flex items-center gap-5'>
          { user &&
          <>     
-         <button onClick={becomeEducator}>{isEducator ? 'Educator Dashboard' : 'Becoome Educator'}
+         <button onClick={becomeEducator}>{isEducator ? 'Educator Dashboard' : 'Become Educator'}
          </button>
                 <Link to='/my-enrollments'>My Enrollments</Link>
                 </>
@@ -66,7 +66,7 @@ const Navbar = () => {
         <div className='flex items-center gap-1 sm:gap-2 max-sm:text-xs'>
          { user &&
          <>     
-         <button onClick={becomeEducator}>{isEducator ? 'Educator Dashboard' : 'Becoome Educator'}
+         <button onClick={becomeEducator}>{isEducator ? 'Educator Dashboard' : 'Become Educator'}
          </button>
                 <Link to='/my-enrollments'>My Enrollments</Link>
                 </>
